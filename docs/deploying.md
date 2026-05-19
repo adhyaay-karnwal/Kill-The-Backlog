@@ -14,6 +14,29 @@ gcloud config set compute/region <your_region>
 gcloud container clusters get-credentials primary
 ```
 
+## Configure Helm Values
+
+Before deploying, create a private values file from the example and fill in the
+deployment-specific settings:
+
+```sh
+cp .helm/values.example.yaml .helm/values.yaml
+```
+
+Do not commit `.helm/values.yaml`; it contains API keys, OAuth secrets, database
+URLs, and cookie/encryption secrets.
+
+The chart creates separate Kubernetes secrets from `main.envVars` for the app
+and `zero.envVars` for Zero cache. Use `.helm/values.example.yaml` as the source
+of truth for the required keys.
+
+For `baseDomain: example.com`, the chart exposes these public hostnames:
+
+- `https://example.com` for the marketing site.
+- `https://www.example.com` as a redirect to the marketing site.
+- `https://ktb.example.com` for the main app.
+- `https://zero.ktb.example.com` for Zero cache.
+
 ## Deploy
 
 ```sh
@@ -30,11 +53,44 @@ werf converge
 gcloud container clusters get-credentials <your_cluster_name>
 ```
 
-3. Choose a TLS setup.
+3. Create managed database and cache instances.
+
+Create a Cloud SQL for PostgreSQL instance, database, and user for the app. Make
+sure it is reachable from the GKE cluster, preferably through private IP, then
+use its connection string in your Helm values.
+
+Create a Memorystore for Redis instance reachable from the same cluster/network,
+then use its Redis endpoint in your Helm values for the app's queue backing
+store.
+
+4. Configure Cloud SQL for Zero.
+
+Zero requires PostgreSQL 15+ with logical replication enabled. For Cloud SQL for
+PostgreSQL, enable logical decoding with the `cloudsql.logical_decoding`
+database flag. See Zero's
+[Google Cloud SQL notes](https://zero.rocicorp.dev/docs/connecting-to-postgres#google-cloud-sql).
+
+```sh
+gcloud sql instances patch <cloud_sql_instance_name> \
+  --database-flags=cloudsql.logical_decoding=on
+```
+
+Cloud SQL may restart the instance after the flag change. Afterward, use direct
+Cloud SQL connection strings for `ZERO_UPSTREAM_DB`, `ZERO_CHANGE_DB`, and
+`ZERO_CVR_DB`. The example values point all three at the same PostgreSQL
+instance and database.
+
+5. Choose a TLS setup.
 
 The Helm chart references a Kubernetes TLS secret by default. You can create that
 secret yourself, or enable the optional cert-manager `Certificate` resource and
 point it at an issuer that you manage separately.
+
+The chart serves Zero at `zero.ktb.<base_domain>` so the app's
+`ktb.<base_domain>` auth cookie is sent to both the app and Zero cache. Make
+sure your TLS certificate covers that nested Zero hostname; the chart's
+cert-manager `Certificate` includes it explicitly because `*.example.com` does
+not cover `zero.ktb.example.com`.
 
 To bring your own certificate, create a TLS secret in the app namespace:
 
@@ -56,7 +112,7 @@ certManager:
   enabled: false
 ```
 
-4. Optionally install cert-manager:
+6. Optionally install cert-manager:
 
 ```sh
 # Request values copied from https://oneuptime.com/blog/post/2026-01-17-helm-cert-manager-tls-certificates/view
@@ -78,7 +134,7 @@ helm upgrade --install cert-manager cert-manager \
   --set global.leaderElection.namespace=cert-manager
 ```
 
-5. Verify cert-manager install:
+7. Verify cert-manager install:
 
 ```sh
 kubectl get pods -n cert-manager
@@ -134,9 +190,13 @@ certManager:
     name: letsencrypt-dns01
 ```
 
-6. Create a regional static IP in the GCP console.
+8. Create a regional static IP in the GCP console.
 
-7. Install ingress-nginx:
+Point DNS for `base_domain`, `www.<base_domain>`, `ktb.<base_domain>`, and
+`zero.ktb.<base_domain>` at this static IP. Zero uses the nested hostname so the
+app's `ktb.<base_domain>` auth cookie is shared with the Zero cache origin.
+
+9. Install ingress-nginx:
 
 ```sh
 # Request values copied from the ingress-nginx helm chart.

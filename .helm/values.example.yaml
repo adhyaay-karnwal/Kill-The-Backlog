@@ -15,15 +15,40 @@ certManager:
     kind: ClusterIssuer
     name: letsencrypt-dns01
 
-mainEnvVars:
-  ANTHROPIC_API_KEY: ""
-  DB_URL: ""
-  E2B_API_KEY: ""
-  GITHUB_OAUTH_CLIENT_ID: ""
-  GITHUB_OAUTH_CLIENT_SECRET: ""
-  GITHUB_OAUTH_REDIRECT_URI: https://ktb.example.com/auth/github/callback
-  MAIN_ORIGIN: https://ktb.example.com
-  REDIS_URL: ""
-  SESSION_SECRET: ""
-  E2B_TEMPLATE_NAME: ""
-  PROVIDER_API_KEY_ENCRYPTION_SECRET: ""
+main:
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+  envVars:
+    ANTHROPIC_API_KEY: ""
+    DB_URL: ""
+    E2B_API_KEY: ""
+    GITHUB_OAUTH_CLIENT_ID: ""
+    GITHUB_OAUTH_CLIENT_SECRET: ""
+    GITHUB_OAUTH_REDIRECT_URI: https://ktb.example.com/auth/github/callback
+    MAIN_ORIGIN: https://ktb.example.com
+    REDIS_URL: ""
+    SESSION_SECRET: ""
+    E2B_TEMPLATE_NAME: ""
+    PROVIDER_API_KEY_ENCRYPTION_SECRET: ""
+    ZERO_CACHE_URL: https://zero.ktb.example.com
+
+zero:
+  image: rocicorp/zero:1.5.0
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  storageSize: 20Gi
+  envVars:
+    ZERO_ADMIN_PASSWORD: ""
+    ZERO_CHANGE_DB: ""
+    ZERO_CVR_DB: ""
+    ZERO_ENABLE_CRUD_MUTATIONS: "false"
+    ZERO_MUTATE_FORWARD_COOKIES: "true"
+    ZERO_MUTATE_URL: https://ktb.example.com/api/zero/mutate
+    ZERO_QUERY_FORWARD_COOKIES: "true"
+    ZERO_QUERY_URL: https://ktb.example.com/api/zero/query
+    ZERO_REPLICA_FILE: /data/replica.db
+    ZERO_UPSTREAM_DB: ""

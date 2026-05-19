@@ -1,0 +1,14 @@
+{{- $ctx := merge (dict) . (dict "component" "zero-cache") -}}
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "app.fullname" . }}-zero-cache-data
+  labels:
+    {{- include "app.labels" $ctx | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.zero.storageSize }}

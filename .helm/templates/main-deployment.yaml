@@ -25,9 +25,7 @@ spec:
             - name: http
               containerPort: 3000
           resources:
-            requests:
-              cpu: "1"
-              memory: 2Gi
+            {{- toYaml .Values.main.resources | nindent 12 }}
           envFrom:
             - secretRef:
                 name: {{ include "app.fullname" . }}-main-env-vars

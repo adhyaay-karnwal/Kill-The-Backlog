@@ -1,0 +1,66 @@
+{{- $ctx := merge (dict) . (dict "component" "zero-cache") -}}
+
+# Based on Zero's minimum viable self-hosting strategy:
+# https://zero.rocicorp.dev/docs/self-host#minimum-viable-strategy
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-zero-cache
+  labels:
+    {{- include "app.labels" $ctx | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "app.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/zero-cache-env-vars: {{ include (print $.Template.BasePath "/zero-cache-env-vars-secret.yaml") . | sha256sum }}
+      labels:
+        {{- include "app.labels" $ctx | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: 600
+      containers:
+        - name: zero-cache
+          image: {{ .Values.zero.image }}
+          ports:
+            - name: http
+              containerPort: 4848
+          resources:
+            {{- toYaml .Values.zero.resources | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ include "app.fullname" . }}-zero-cache-env-vars
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+            failureThreshold: 120
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /keepalive
+              port: http
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "app.fullname" . }}-zero-cache-data

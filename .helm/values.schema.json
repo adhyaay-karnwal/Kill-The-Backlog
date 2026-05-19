@@ -4,18 +4,133 @@
   "required": [
     "baseDomain",
     "certManager",
-    "mainEnvVars",
+    "main",
     "tls",
-    "wwwBucketHostname"
+    "wwwBucketHostname",
+    "zero"
   ],
   "properties": {
     "baseDomain": {
       "type": "string",
       "minLength": 1
     },
-    "mainEnvVars": {
+    "main": {
       "type": "object",
-      "minProperties": 1
+      "required": [
+        "envVars",
+        "resources"
+      ],
+      "properties": {
+        "envVars": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "resources": {
+          "type": "object",
+          "required": [
+            "requests"
+          ],
+          "properties": {
+            "requests": {
+              "type": "object",
+              "required": [
+                "cpu",
+                "memory"
+              ],
+              "properties": {
+                "cpu": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "memory": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "cpu": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "memory": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "zero": {
+      "type": "object",
+      "required": [
+        "envVars",
+        "image",
+        "resources",
+        "storageSize"
+      ],
+      "properties": {
+        "envVars": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "image": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storageSize": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resources": {
+          "type": "object",
+          "required": [
+            "requests"
+          ],
+          "properties": {
+            "requests": {
+              "type": "object",
+              "required": [
+                "cpu",
+                "memory"
+              ],
+              "properties": {
+                "cpu": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "memory": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "cpu": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "memory": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "wwwBucketHostname": {
       "type": "string",

@@ -1,0 +1,30 @@
+{{- $ctx := merge (dict) . (dict "component" "zero-cache") -}}
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-zero-cache
+  labels:
+    {{- include "app.labels" $ctx | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/server-snippet: |
+      {{- include "app.securityServerSnippet" . | nindent 6 }}
+spec:
+  ingressClassName: nginx
+  {{- if .Values.tls.enabled }}
+  tls:
+    - hosts:
+        - zero.ktb.{{ .Values.baseDomain }}
+      secretName: {{ include "app.tlsSecretName" . }}
+  {{- end }}
+  rules:
+    - host: zero.ktb.{{ .Values.baseDomain }}
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: {{ include "app.fullname" . }}-zero-cache
+                port:
+                  name: http

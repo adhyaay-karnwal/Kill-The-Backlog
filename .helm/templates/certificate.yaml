@@ -14,4 +14,5 @@ spec:
   dnsNames:
     - {{ .Values.baseDomain }}
     - "*.{{ .Values.baseDomain }}"
+    - zero.ktb.{{ .Values.baseDomain }}
 {{- end }}
